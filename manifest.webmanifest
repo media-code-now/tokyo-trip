@@ -1,0 +1,19 @@
+{
+  "name": "Japan 2026",
+  "short_name": "Japan 2026",
+  "description": "Eleven nights, five stops — offline trip guide for Japan, Sep–Oct 2026.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#15233B",
+  "theme_color": "#15233B",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

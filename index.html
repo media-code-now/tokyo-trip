@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15233B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Japan 2026">
+<title>Japan 2026</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --ink:#171B21; --indigo:#1E3050; --indigo-deep:#15233B;
+    --paper:#ECEDE9; --card:#F4F4F1; --paper-2:#E3E5E0; --persimmon:#C8542B;
+    --stone:#767C82; --line:rgba(23,27,33,.13); --line-light:rgba(236,237,233,.2);
+    --serif:"Poppins",'Hiragino Kaku Gothic ProN','Yu Gothic',system-ui,sans-serif;
+    --sans:"Poppins",'Hiragino Kaku Gothic ProN','Yu Gothic',system-ui,-apple-system,sans-serif;
+    --bar:60px; --tabs:66px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:15.5px;line-height:1.65;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;
+  }
+  button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--persimmon);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- app shell ---------- */
+  .app{min-height:100%;display:flex;flex-direction:column}
+
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:40;height:calc(var(--bar) + env(safe-area-inset-top));
+    padding-top:env(safe-area-inset-top);
+    background:var(--indigo-deep);color:var(--paper);
+    display:flex;align-items:center;gap:12px;padding-left:16px;padding-right:12px;
+  }
+  .topbar .ttl{font-family:var(--serif);font-size:16.5px;font-weight:600;line-height:1.15;flex:1;min-width:0;letter-spacing:-.01em}
+  .topbar .ttl small{display:block;font-family:var(--sans);font-size:11.5px;
+    color:rgba(236,237,233,.55);letter-spacing:.04em;font-weight:400}
+  .iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--paper);flex:0 0 40px}
+  .iconbtn:active{background:rgba(255,255,255,.1)}
+  .iconbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .backbtn{margin-left:-6px}
+
+  .screen{
+    flex:1;padding-top:calc(var(--bar) + env(safe-area-inset-top));
+    padding-bottom:calc(var(--tabs) + env(safe-area-inset-bottom) + 12px);
+  }
+  .pad{padding:22px 18px 8px;max-width:760px;margin:0 auto}
+
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:40;
+    height:calc(var(--tabs) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+    background:var(--indigo-deep);display:flex;border-top:1px solid rgba(0,0,0,.35);
+  }
+  .tabbar button{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    color:rgba(236,237,233,.5);font-size:10.5px;letter-spacing:.02em;padding-top:2px;
+  }
+  .tabbar svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round}
+  .tabbar button[aria-current="page"]{color:var(--persimmon)}
+
+  @media(min-width:900px){
+    :root{--side:212px}
+    .app{padding-left:var(--side)}
+    .topbar{left:var(--side)}
+    .tabbar{
+      top:0;bottom:0;left:0;right:auto;width:var(--side);height:100%;
+      flex-direction:column;justify-content:flex-start;padding-top:22px;gap:2px;
+      border-top:0;border-right:1px solid rgba(0,0,0,.35);
+    }
+    .tabbar button{
+      flex:0 0 auto;flex-direction:row;justify-content:flex-start;gap:14px;
+      padding:13px 22px;font-size:14.5px;width:100%;
+    }
+    .tabbar button[aria-current="page"]{background:rgba(200,84,43,.12)}
+    .screen{padding-bottom:40px}
+    .pad{padding:30px 34px 20px}
+  }
+
+  /* ---------- shared bits ---------- */
+  h2.sec{font-family:var(--serif);font-weight:600;font-size:22px;margin:0 0 4px;line-height:1.25;letter-spacing:-.015em}
+  p.sub{color:var(--stone);font-size:14.5px;margin:0 0 20px;max-width:62ch}
+  .card{background:var(--card);border:1px solid var(--line);padding:17px 18px;margin-bottom:11px}
+  .card h3{font-family:var(--serif);font-weight:600;font-size:17px;margin:0 0 6px;line-height:1.3;letter-spacing:-.01em}
+  .card p{margin:0;font-size:15px;color:#3A4048;line-height:1.6}
+  .kicker{font-family:var(--serif);font-weight:500;font-size:11px;letter-spacing:.12em;color:var(--persimmon);
+    text-transform:uppercase;display:block;margin-bottom:7px}
+  .rowlink{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    padding:15px 2px;border-bottom:1px solid var(--line);text-decoration:none}
+  .rowlink:active{background:rgba(30,48,80,.05)}
+  .rowlink .chev{margin-left:auto;color:var(--stone);flex:0 0 auto}
+  .rowlink .chev svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .segs{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin:0 0 20px;padding-bottom:2px}
+  .segs::-webkit-scrollbar{display:none}
+  .segs button{border:1px solid var(--line);padding:7px 15px;font-size:14px;color:#3A4048;white-space:nowrap;border-radius:999px}
+  .segs button[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--paper)}
+  .muted{color:var(--stone);font-size:14px}
+
+  /* ---------- today ---------- */
+  .hero-today{background:var(--indigo);color:var(--paper);padding:26px 18px 24px;margin-bottom:20px}
+  @media(min-width:900px){.hero-today{padding:32px 34px 30px}}
+  .hero-today .count{font-family:var(--serif);font-weight:600;font-size:46px;line-height:1;color:var(--persimmon);margin-bottom:6px;letter-spacing:-.03em}
+  .hero-today h1{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 10px;line-height:1.3;letter-spacing:-.015em}
+  .hero-today p{margin:0;color:rgba(236,237,233,.75);font-size:15px;max-width:56ch}
+  .hero-today .route{display:flex;gap:0;margin-top:20px;border-top:1px solid var(--line-light);overflow-x:auto;scrollbar-width:none}
+  .hero-today .route::-webkit-scrollbar{display:none}
+  .hero-today .route div{flex:1 0 auto;min-width:96px;padding:14px 12px 4px 0;position:relative;font-size:12.5px;color:rgba(236,237,233,.6)}
+  .hero-today .route b{display:block;font-family:var(--serif);font-size:16px;font-weight:500;color:var(--paper)}
+  .hero-today .route div::before{content:"";position:absolute;top:-4px;left:0;width:7px;height:7px;border-radius:50%;background:var(--persimmon)}
+  .prog{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:22px}
+  .prog button{background:var(--card);border:1px solid var(--line);padding:15px 16px;text-align:left}
+  .prog .pn{font-family:var(--serif);font-size:24px;line-height:1.1}
+  .prog .pl{font-size:12.5px;color:var(--stone);margin-top:2px}
+  .bar{height:3px;background:var(--paper-2);margin-top:10px}
+  .bar i{display:block;height:100%;background:var(--persimmon)}
+
+  /* ---------- day detail ---------- */
+  .daymeta{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:14px}
+  .chip{font-size:12px;border:1px solid var(--line);padding:2px 9px;color:var(--stone)}
+  .chip.hot{border-color:var(--persimmon);color:var(--persimmon)}
+  .stops{margin:0 0 18px;padding:0;list-style:none}
+  .stops li{position:relative;padding-left:20px;margin-bottom:9px;font-size:15.5px;color:#333940;line-height:1.5}
+  .stops li::before{content:"";position:absolute;left:0;top:11px;width:9px;height:1px;background:var(--stone)}
+  .note{font-size:14.5px;color:#3A4048;border-left:2px solid var(--persimmon);padding:3px 0 3px 13px;margin:0 0 12px}
+  .tip{font-size:14px;color:var(--stone);margin:0 0 18px}
+  .daynav{display:flex;gap:10px;margin:26px 0 8px}
+  .daynav button{flex:1;border:1px solid var(--line);padding:12px;font-size:14px;color:#3A4048}
+  .daynav button[disabled]{opacity:.35}
+
+  /* ---------- places ---------- */
+  .spot{padding:16px 0;border-bottom:1px solid var(--line)}
+  .spot h4{font-family:var(--serif);font-weight:600;font-size:16.5px;margin:0 0 2px;letter-spacing:-.01em}
+  .spot .when{font-size:12.5px;color:var(--persimmon);display:block;margin-bottom:6px}
+  .spot p{margin:0;font-size:15px;color:#3A4048;line-height:1.6}
+  .watch{margin:20px 0 0;padding:16px 18px;background:rgba(30,48,80,.06);border-left:2px solid var(--indigo)}
+  .watch b{font-family:var(--serif);font-weight:600;display:block;margin-bottom:4px;font-size:15px}
+  .watch p{margin:0;font-size:14.5px;color:#3A4048;line-height:1.6}
+
+  /* ---------- map ---------- */
+  .mapframe{background:var(--indigo);position:relative;margin-bottom:16px}
+  #leaflet-map{width:100%;height:340px;background:var(--indigo)}
+  @media(min-width:900px){#leaflet-map{height:440px}}
+  .leaflet-container{font-family:var(--sans)}
+  .pinmark{
+    display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+    background:var(--persimmon);color:var(--paper);border:2px solid var(--paper);
+    font-family:var(--serif);font-weight:600;font-size:12.5px;line-height:1;
+    box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer;
+  }
+  .pinmark.on{background:var(--indigo-deep);transform:scale(1.12)}
+  .pinlist{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+  .pinlist li{border-bottom:1px solid var(--line)}
+  .pinlist a{display:flex;gap:12px;align-items:baseline;padding:11px 2px;text-decoration:none}
+  .pinlist li.on a{background:rgba(30,48,80,.06)}
+  .pinlist b{flex:0 0 20px;font-family:var(--serif);font-weight:500;font-size:12.5px;color:var(--persimmon)}
+  .pinlist .nm{font-size:15.5px;display:block;line-height:1.3}
+  .pinlist .nt{font-size:13px;color:var(--stone);display:block}
+  .pinlist .go{margin-left:auto;font-size:11.5px;color:var(--stone);align-self:center}
+  .btn-wide{display:block;width:100%;text-align:center;background:var(--indigo);color:var(--paper);
+    padding:14px;margin-top:16px;text-decoration:none;font-size:14.5px}
+
+  /* ---------- emergency ---------- */
+  .sos{display:flex;gap:10px;margin-bottom:16px}
+  .sos a{flex:1;background:var(--persimmon);color:var(--paper);text-decoration:none;
+    padding:14px 10px;text-align:center;border-radius:2px}
+  .sos a .big{font-family:var(--serif);font-weight:600;font-size:24px;display:block;line-height:1.1}
+  .sos a .lbl{font-size:11.5px;letter-spacing:.04em;opacity:.9;display:block;margin-top:3px}
+  .hotelcard{background:var(--card);border:1px solid var(--line);padding:15px 16px;margin-bottom:11px}
+  .hotelcard .city{font-family:var(--serif);font-weight:500;font-size:11px;letter-spacing:.12em;
+    color:var(--persimmon);text-transform:uppercase;display:block;margin-bottom:6px}
+  .hotelcard .nm{font-family:var(--serif);font-weight:600;font-size:17px;line-height:1.3}
+  .hotelcard .jp{font-size:15px;color:#3A4048;margin:1px 0 8px}
+  .hotelcard .meta{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13.5px;color:var(--stone)}
+  .hotelcard .meta a{color:var(--indigo);text-decoration:none;font-family:var(--serif)}
+  .refrow{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px;align-items:baseline}
+  .refrow .k{flex:0 0 44%;color:#3A4048}
+  .refrow .v{font-family:var(--serif);font-weight:500}
+  .refrow .v small{display:block;font-family:var(--sans);font-weight:400;color:var(--stone);font-size:12.5px}
+
+  /* ---------- checkboxes ---------- */
+  label.chk{display:flex;gap:12px;align-items:flex-start;font-size:15px;padding:9px 0;
+    cursor:pointer;color:#3A4048;border-bottom:1px solid var(--line)}
+  label.chk input{appearance:none;width:19px;height:19px;flex:0 0 19px;margin-top:2px;
+    border:1px solid var(--stone);cursor:pointer;position:relative}
+  label.chk input:checked{background:var(--persimmon);border-color:var(--persimmon)}
+  label.chk input:checked::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  label.chk input:checked ~ .lbl{text-decoration:line-through;color:var(--stone)}
+  .lbl{flex:1}
+  .st{font-size:12px;color:var(--stone);flex:0 0 auto;align-self:center}
+  .st.done{color:var(--persimmon)}
+  .grp-h{font-family:var(--serif);font-weight:600;font-size:16px;margin:22px 0 4px;letter-spacing:-.01em}
+  .grp-h:first-child{margin-top:0}
+
+  /* ---------- tables / lists ---------- */
+  .ptable{width:100%;border-collapse:collapse;font-size:15px}
+  .ptable td{border-bottom:1px solid var(--line);padding:12px 10px 12px 0;vertical-align:top;color:#3A4048}
+  .ptable td:first-child{font-family:var(--serif);font-size:16px;color:var(--ink);white-space:nowrap;width:1%}
+  .ptable td:last-child{color:var(--persimmon);white-space:nowrap;font-size:13.5px;text-align:right;padding-right:0}
+  ul.plain{margin:0;padding-left:18px;font-size:15px;color:#3A4048}
+  ul.plain li{margin-bottom:7px}
+  .phr{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .phr span:first-child{flex:0 0 46%;color:#3A4048}
+  .phr span:last-child{font-family:var(--serif)}
+
+  /* ---------- search ---------- */
+  .searchwrap{position:fixed;inset:0;z-index:60;background:var(--paper);display:none;flex-direction:column}
+  .searchwrap.open{display:flex}
+  .searchtop{background:var(--indigo-deep);padding-top:env(safe-area-inset-top);display:flex;align-items:center;
+    gap:8px;padding-left:12px;padding-right:12px;height:calc(var(--bar) + env(safe-area-inset-top))}
+  .searchtop input{
+    flex:1;background:rgba(255,255,255,.08);border:0;color:var(--paper);
+    font-size:16px;padding:11px 14px;font-family:var(--sans);
+  }
+  .searchtop input::placeholder{color:rgba(236,237,233,.45)}
+  .searchres{flex:1;overflow-y:auto;padding:8px 18px 30px;max-width:760px;margin:0 auto;width:100%}
+  .res-k{font-size:11.5px;letter-spacing:.1em;color:var(--persimmon);text-transform:uppercase;margin-bottom:2px;display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="iconbtn backbtn" id="back" hidden aria-label="Back">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="ttl" id="bartitle">Japan<small>23 SEP – 4 OCT 2026</small></div>
+    <button class="iconbtn" id="searchbtn" aria-label="Search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    </button>
+  </header>
+
+  <main class="screen" id="screen"></main>
+
+  <nav class="tabbar" id="tabs" aria-label="Main">
+    <button data-tab="today"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>Today</button>
+    <button data-tab="days"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>Days</button>
+    <button data-tab="places"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>Places</button>
+    <button data-tab="map"><svg viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>Map</button>
+    <button data-tab="prep"><svg viewBox="0 0 24 24"><polyline points="4 12 8 16 15 8"/><line x1="4" y1="5" x2="20" y2="5"/><line x1="13" y1="19" x2="20" y2="19"/></svg>Prep</button>
+  </nav>
+</div>
+
+<div class="searchwrap" id="searchwrap">
+  <div class="searchtop">
+    <button class="iconbtn" id="searchclose" aria-label="Close search">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <input id="searchinput" type="search" placeholder="Search places, days, tips…" autocomplete="off">
+  </div>
+  <div class="searchres" id="searchres"></div>
+</div>
+<script>
+/* =====================================================================
+   EVERYTHING ON THE PAGE COMES FROM HERE. Edit this object, nothing else.
+   ===================================================================== */
+const TRIP = {
+  title: "Eleven nights, five stops, one long walk south and back.",
+  subtitle: "Temples, gardens, old neighbourhoods and whisky — with the mornings kept free for light and the afternoons kept free for nothing in particular.",
+  dates: "23 SEPTEMBER – 4 OCTOBER 2026",
+
+  route: [
+    { city:"Tokyo",    nights:"3 nights" },
+    { city:"Kanazawa", nights:"2 nights" },
+    { city:"Kyoto",    nights:"4 nights" },
+    { city:"Fuji",     nights:"1 night" },
+    { city:"Tokyo",    nights:"final night" }
+  ],
+
+  nights: [
+    { n:"11", l:"nights available" },
+    { n:"13", l:"nights as planned" },
+    { n:"−2", l:"to reconcile" },
+    { n:"3+2+4+1+1", l:"the version used below" }
+  ],
+
+  before: [
+    { h:"Reconcile the dates, then book trains",
+      p:"Everything downstream waits on this. Once check-in and check-out dates are fixed, the four rail legs become a single afternoon of booking. Reserve seats — the Thunderbird is all-reserved, and Shinkansen seats on a Saturday in early autumn go." },
+    { h:"Set up the phone before you fly",
+      p:"eSIM activated at home, Suica added to Apple Wallet and loaded, Japanese downloaded for offline Google Translate. Save every hotel name in Japanese and English, plus its phone number and nearest station, somewhere that works without data." },
+    { h:"Plan the luggage, not just the bags",
+      p:"Forward the big case Tokyo → Kanazawa → Kyoto, and from Kyoto send it straight to the final Tokyo hotel so the Fuji night is one small overnight bag. Confirm each hotel accepts forwarded luggage and use the reservation name exactly." }
+  ],
+
+  bookAhead: [
+    "Rail seats for all four legs, once dates are final",
+    "The two or three meals you genuinely care about — 2 to 4 weeks out",
+    "Whisky Lab Kyoto Gion, on a Gion evening",
+    "Shibuya Sky, if you want the sunset slot",
+    "Fuji lodging with dinner and breakfast included",
+    "Yamazaki distillery tour, if you decide to go — advance lottery"
+  ],
+  bookNot: [
+    "Temples and gardens — walk-up, almost without exception",
+    "Kenroku-en, Kanazawa Castle, the chaya districts",
+    "Most lunches — leave them open for whatever you walk past",
+    "Chureito Pagoda — free, outdoors, no ticket",
+    "Local trains and buses — the IC card is the ticket",
+    "Omicho and Nishiki markets"
+  ],
+
+  essentials: [
+    { n:"01", h:"Trains",
+      p:"Four intercity legs. The Kanazawa–Kyoto one is the only awkward member of the set.",
+      list:["Tokyo → Kanazawa: Hokuriku Shinkansen direct, around 2.5 hours","Kanazawa → Kyoto: Shinkansen to Tsuruga, change to the Thunderbird — about 2 hours total","Kyoto → Kawaguchiko: Shinkansen to Mishima then highway bus, or back via Shinjuku on the Fuji Excursion","Follow the station exit number in Google Maps — the wrong exit costs ten minutes on foot"] },
+    { n:"02", h:"Money",
+      p:"Cards work in most city businesses. Cash still rules temples, ticket machines, small counters and anything older.",
+      list:["Withdraw at 7-Eleven or Japan Post ATMs","Keep a few thousand yen for the lodging tax, often cash only at smaller inns","Coins accumulate fast — spend them on lockers and vending machines","No tipping, anywhere, including taxis"] },
+    { n:"03", h:"Luggage forwarding",
+      p:"Takkyubin, usually Yamato. The hotel desk fills in the form and the bag meets you at the next hotel.",
+      list:["Assume next-day, not same-day — plan around the gap","Confirm the receiving hotel accepts it, under your exact booking name","Keep passport, medication, chargers, camera and one change of clothes with you","From Kyoto, send the big case straight to the final Tokyo hotel and skip Fuji entirely"] },
+    { n:"04", h:"Apps",
+      p:"Five that earn their space, loaded before you land.",
+      list:["Suica in Apple Wallet — transit and konbini","Google Maps for exits and platforms; NAVITIME for comparing rail routes","Google Translate with Japanese downloaded offline","GO Taxi for rain and tired evenings","Tabelog for food — Japanese ratings run conservative, a 3.5 is good"] },
+    { n:"05", h:"Manners",
+      p:"Almost nothing is strict. These few make you easier to be around.",
+      list:["Quiet on trains, no calls in the carriage","Let people off before you board, and queue properly","Bins are rare — carry a small bag for your own rubbish","Shoes off wherever there's a step up or a rack"] },
+    { n:"06", h:"What changed in 2026",
+      p:"Three money rules moved this year. Two of them work in your favour, given your dates.",
+      list:["Departure tax is now ¥3,000, built into the air ticket","Tax-free shopping switches to airport refunds on 1 November — you travel before that, so you still get the discount at the till","Kyoto's lodging tax rose on 1 March, charged per person per night on arrival","Oversized suitcases on some Shinkansen need a reserved luggage space — another reason to forward"] }
+  ],
+
+  destinations: [
+    {
+      kanji:"東京", city:"Tokyo", meta:"3 nights up front, 1 at the end",
+      lede:"Tokyo isn't one city, it's fifteen small ones stitched together by rail. Read it as neighbourhoods rather than a checklist: one major sight early, then walk the side streets until the light goes.",
+      spots:[
+        { h:"Senso-ji and Asakusa", when:"Before 8am — and again after dark",
+          p:"The shopping street in front is shuttered before nine, which is exactly when to come. Go back after dark and the architecture is lit with the daytime crowds gone. It's the rare Tokyo sight worth photographing twice in one day, and the two versions look nothing alike." },
+        { h:"Yanaka and Nezu", when:"Late morning onward",
+          p:"Low-rise old Tokyo that survived both the earthquake and the war — cemetery, cats, temples, a shopping street that hasn't changed. Nezu Shrine's small torii tunnel is the quiet cousin of the famous one in Kyoto. No headline sight here, which is the point." },
+        { h:"Meiji Jingu", when:"Opens with the sun · free",
+          p:"No fixed opening hour — it runs on daylight, so you can be inside the forest at 6am with nobody there. Enter from the Harajuku side and walk the gravel approach slowly. The ten minutes under the trees is the experience, not the buildings at the end." },
+        { h:"Omotesando", when:"Any afternoon",
+          p:"Walk Harajuku only as far as it interests you, then turn onto Omotesando for the architecture — a run of buildings by Ando, Ito, Herzog & de Meuron doing quiet strange things with glass. Better on foot than in any photograph." },
+        { h:"Shibuya Sky", when:"Sunset slot, booked ahead",
+          p:"The one paid viewpoint that fits how you shoot: open-air roof deck, the crossing far below, the city going blue in every direction. Sunset slots sell out. If it's full, the free observatory at the Metropolitan Government Building in Shinjuku is a decent fallback." },
+        { h:"Imperial Palace East Gardens", when:"Closed Mondays and Fridays · free",
+          p:"Massive stone walls, moats and the foundations of the old keep, kept as a garden. Fifteen minutes from Tokyo Station, and pairs naturally with the Marunouchi brick facade for the old-versus-new contrast." },
+        { h:"Tokyo Whisky Library", when:"Evening · Minami-Aoyama",
+          p:"A wall of several thousand bottles and a room that takes it seriously without being stuffy. Treat it as a tasting stop rather than a bottle hunt — ask for a Japanese flight and let them steer you by what's actually open, since Hibiki and Hakushu availability moves constantly." },
+        { h:"Kagurazaka", when:"Evening",
+          p:"Sloped stone lanes and old geisha-quarter bones, now full of small restaurants and French bakeries. The best area in the city to arrive at seven with no reservation and find dinner." }
+      ],
+      watch:{ h:"Two Tokyo habits",
+        p:"Central wards including Shibuya and Chiyoda fine street smoking, around ¥2,000 — use the marked areas near stations. And last trains run around midnight, not later; a late taxi home can cost more than the whole day's transport." }
+    },
+    {
+      kanji:"金沢", city:"Kanazawa", meta:"2 nights · the best-matched stop on this trip",
+      lede:"A castle town the bombers missed, so the old wooden quarters are real rather than reconstructed. The sightseeing core sits within about 2km of the castle, so you walk between almost everything. Don't over-schedule it — the lanes and the river are the attraction, not empty time between attractions.",
+      spots:[
+        { h:"Omicho Market", when:"Late morning to early afternoon",
+          p:"Two hundred-odd stalls, mostly seafood, running since the Edo period. Kanazawa is a crab and sweet-shrimp town and this is where to eat both — either standing at a stall or in one of the small restaurants upstairs. A good first stop straight off the train while your room isn't ready." },
+        { h:"Nagamachi Samurai District", when:"Morning, or overcast",
+          p:"Earthen walls, water channels, gates and narrow lanes where the retainers lived. It's small and it rewards slowing down — the texture of the mud walls under flat light is the photograph, not any particular building. In winter the walls get straw matting; in September they're bare." },
+        { h:"Kenroku-en", when:"At opening",
+          p:"One of the three great gardens of Japan, and worth the alarm. Arrive as it opens and you get the ponds and the bridges without people in them; by ten it's tour groups. Walk straight into Kanazawa Castle Park afterwards — the two share a gate." },
+        { h:"Higashi Chaya", when:"Late afternoon",
+          p:"The largest of the teahouse districts, lattice fronts and gold-leaf shops. Beautiful and busy. Go, but don't stop here." },
+        { h:"Kazuemachi Chaya", when:"Dusk — this is the one",
+          p:"Cross the river to the smaller, quieter chaya district on the Asanogawa. Stay through dusk when the day groups have gone and the lanterns come on along the water. Ume-no-Hashi and the riverside path are the most atmospheric fifteen minutes in the city." },
+        { h:"21st Century Museum", when:"Closed Mondays",
+          p:"A circular glass building of contemporary art, including the swimming pool you can walk underneath. A deliberate change of register from the gardens and the wooden lanes if you want one." }
+      ],
+      watch:{ h:"Getting around",
+        p:"The Loop Bus takes Suica and other national IC cards, so there's nothing to buy. But most of what you want is walkable from the castle, and walking is how you find the parts nobody photographs." }
+    },
+    {
+      kanji:"京都", city:"Kyoto", meta:"4 nights · slow down here",
+      lede:"The biggest mistake in Kyoto is crossing the city repeatedly in one day. Group by geography, start early, and accept that you'll see fewer temples better. The city now has visitor rules with fines attached, and enforces them.",
+      spots:[
+        { h:"Kiyomizu-dera and Higashiyama", when:"Opens 6am",
+          p:"One of the few major temples that opens genuinely early. Start at the top and walk down through Sannenzaka and Ninenzaka — preserved streets that are lovely at dawn and near-impassable by afternoon. Continue through Yasaka Shrine and Maruyama Park, then stop for the rest of the day." },
+        { h:"Gion after dark", when:"Blue hour · stay on the main streets",
+          p:"Hanamikoji and the marked public roads are open to everyone. The private residential alleys off them are not: entering or photographing there carries a ¥10,000 fine, signposted in three languages and actively enforced. Don't chase or block maiko — book a performance if you want to photograph them properly." },
+        { h:"Fushimi Inari", when:"Before 7am, or after 8pm",
+          p:"Open around the clock and free, which is the whole trick. At dawn the tunnel is silent and you can climb properly — most people turn back after fifteen minutes, and the upper loop is where it gets good. By ten it's a queue with torii." },
+        { h:"Fushimi sake district", when:"Same morning, on the way back",
+          p:"Twenty minutes from the shrine: white-walled breweries along a canal, willow trees, and tasting rooms at Gekkeikan and Kizakura. A completely different Kyoto from the temple circuit, and almost nobody on the early train makes the connection." },
+        { h:"Arashiyama", when:"Bamboo before 8am",
+          p:"The grove is small and photographs far better than it experiences. Go at first light, then spend the real time in Tenryu-ji's garden next door, which is the actual masterpiece and which nobody rushes. Afterwards walk north into the quieter lanes rather than doubling back through the crowd." },
+        { h:"Ginkaku-ji and the Philosopher's Path", when:"¥1,000 as of 2026",
+          p:"Admission went up this year. The moss and the raked sand justify it. Then walk the canal south — it's free, it's downhill, and Nanzen-ji's brick aqueduct at the end is the best thing on the route. Add one more temple, not five." },
+        { h:"Whisky Lab Kyoto Gion", when:"Slot it into a Gion evening",
+          p:"Put it on the night you're already in Gion so it's part of the walk rather than a separate mission across town. Ask for a comparative Japanese flight and let the bartender adjust to what's open." },
+        { h:"Nishiki Market", when:"Late morning",
+          p:"Five blocks of covered food stalls. Eat standing at the stall you bought from — walking off down the arcade with food in hand is the one thing that reliably annoys the vendors, and there's posted guidance asking you not to." }
+      ],
+      watch:{ h:"Kyoto's buses will eat your day",
+        p:"The old ¥700 bus-only day pass is gone. The replacement is a ¥1,100 subway-and-bus pass, worth it past about five rides — otherwise tap an IC card for the flat ¥230. Buses are slow and packed, so use the subway plus your feet where they overlap, and don't board with a suitcase: drivers can refuse you, and Kyoto Station has same-day delivery to your hotel instead." }
+    },
+    {
+      kanji:"富士", city:"Fuji", meta:"1 night · Kawaguchiko · weather is the boss",
+      lede:"For the postcard Fuji, Lake Kawaguchi is the right base — Hakone gives you a fine onsen valley but a worse mountain. One night is a gamble on cloud, so treat every clear window as the window.",
+      spots:[
+        { h:"Lake Kawaguchi north shore", when:"Sunset, then again at 6am",
+          p:"The classic reflection shot, with the mountain rising straight out of the far shore. The path near the Ohashi bridge gives several angles within a short walk. Mornings between six and eight are clearest — haze builds through the day, and by afternoon the mountain often goes." },
+        { h:"Chureito Pagoda", when:"Sunrise · 398 steps · free",
+          p:"The five-storey pagoda with Fuji behind it, the single most recognisable image of Japan. It's in Fujiyoshida, not Kawaguchiko: ten minutes on the Fujikyu railway to Shimoyoshida, then a ten-minute walk and a real staircase. Free and open at any hour, so first light is available to you if the sky cooperates." },
+        { h:"Oishi Park", when:"Morning",
+          p:"North shore, flower beds in the foreground with the mountain behind. The easiest good composition in the area and a short bus ride from the station." },
+        { h:"If Fuji is hidden", when:"Have this ready",
+          p:"It happens on perfectly pleasant days. The Kawaguchiko Music Forest, the Itchiku Kubota Art Museum, or an onsen with a window all work as a plan B. Don't burn the morning waiting at one viewpoint for a mountain that has decided not to appear." }
+      ],
+      watch:{ h:"The weather rule",
+        p:"If Fuji is clear, go now. Do not wait for your planned time slot. Visibility can turn in twenty minutes, and your best window may be 6:30am rather than 9:00. Check the hourly cloud cover and the live mountain cameras the night before and again when you wake." }
+    },
+    {
+      kanji:"奈良", city:"Nara", meta:"Optional day trip — only if you drop a night elsewhere",
+      lede:"Japan's first permanent capital, 45 minutes from Kyoto on the Kintetsu line. It doesn't fit the 11-night plan below, so it's here as the swap you make if you'd rather have it than the final Tokyo night.",
+      spots:[
+        { h:"Todai-ji", when:"Opens 7:30am in summer",
+          p:"One of the largest wooden buildings anywhere, with a fifteen-metre bronze Buddha inside. Be there at opening — the school groups arrive mid-morning in numbers that change the room." },
+        { h:"Nara Park and the deer", when:"All day",
+          p:"They bow for crackers, and they will also headbutt you and eat a paper map out of your hand. Buy crackers only when you're ready to hand them over, and keep anything paper zipped away." },
+        { h:"Kasuga Taisha", when:"Late afternoon",
+          p:"Three thousand stone and bronze lanterns along a forest approach. The walk up through the trees is the good part." },
+        { h:"Naramachi", when:"Before the train back",
+          p:"Old merchant lanes south of the park — machiya houses, small shops, and almost none of the crowd that's up at Todai-ji." }
+      ]
+    }
+  ],
+
+  days: [
+    { n:1, date:"Wed 23 Sep", city:"TOKYO", bed:"Tokyo · night 1",
+      title:"Land, get in, stay awake",
+      tip:"23 September is the Autumnal Equinox holiday in Japan — domestic trains and sights will be busier than a normal Wednesday.",
+      stops:["Airport to the city by train, not taxi","Drop bags, walk the immediate neighbourhood","Konbini or a small izakaya for dinner"],
+      note:"Don't schedule anything real. The only job today is staying up until a normal bedtime." },
+
+    { n:2, date:"Thu 24 Sep", city:"TOKYO", bed:"Tokyo · night 2",
+      title:"Asakusa and old Tokyo",
+      tip:"Senso-ji twice today — dawn and after dark — is the single best photographic value in Tokyo.",
+      stops:["Senso-ji at first light, before the lanes fill","Out to the Sumida River for open sky and a change of pace","Yanaka and Nezu through the middle of the day","Back to Senso-ji illuminated after dinner"] },
+
+    { n:3, date:"Fri 25 Sep", city:"TOKYO", bed:"Tokyo · night 3",
+      title:"Meiji Jingu, Omotesando, Shibuya",
+      tip:"Book the Shibuya Sky sunset slot now, not today. Forward the big case to Kanazawa tonight.",
+      stops:["Meiji Jingu while the forest paths are still calm","Harajuku as far as it interests you, then Omotesando for the architecture","Long afternoon break","Shibuya Sky at sunset, blue hour from the deck"] },
+
+    { n:4, date:"Sat 26 Sep", city:"KANAZAWA", bed:"Kanazawa · night 1",
+      title:"North to Kanazawa",
+      tip:"Hokuriku Shinkansen, direct, about 2.5 hours. Saturday morning seats go early — reserve.",
+      stops:["Morning train from Tokyo","Omicho Market for a late seafood lunch","Nagamachi samurai lanes, slowly","Oyama Shrine or the castle park if there's energy left","Dinner at a small sushi or kappo counter"] },
+
+    { n:5, date:"Sun 27 Sep", city:"KANAZAWA", bed:"Kanazawa · night 2",
+      title:"Kenroku-en, the castle, the teahouse districts",
+      tip:"All of today is walkable. Don't take a bus you don't need — the lanes between are half the reason to be here.",
+      stops:["Kenroku-en at opening","Straight through the gate into Kanazawa Castle Park","Lunch, then across to Higashi Chaya","Walk on to Kazuemachi and the Asanogawa","Stay through dusk at Ume-no-Hashi"],
+      note:"The 21st Century Museum is the wet-weather swap, but it's closed on Mondays — today is the day it works." },
+
+    { n:6, date:"Mon 28 Sep", city:"KYOTO", bed:"Kyoto · night 1",
+      title:"South to Kyoto, then Higashiyama",
+      tip:"Shinkansen to Tsuruga, change to the Thunderbird. About two hours all in, and the Thunderbird is all-reserved seating.",
+      stops:["Morning train, transfer at Tsuruga","Drop bags, walk up to Kiyomizu-dera in the late afternoon","Down through Sannenzaka, Yasaka Shrine, Maruyama Park","Gion at blue hour — main streets only"] },
+
+    { n:7, date:"Tue 29 Sep", city:"KYOTO", bed:"Kyoto · night 2",
+      title:"Fushimi Inari at dawn, then the sake district",
+      tip:"First train from Kyoto Station gets you to the gates before the light does. Take a torch for the upper loop.",
+      stops:["Fushimi Inari before 7am, climb past the first corridors","Breakfast on the way down","Fushimi sake breweries — canal, willows, a tasting room","Afternoon off","Whisky Lab Kyoto Gion in the evening"],
+      note:"Flex evening. If you'd rather keep whisky for a different night, this is the easiest one to move." },
+
+    { n:8, date:"Wed 30 Sep", city:"KYOTO", bed:"Kyoto · night 3",
+      title:"Arashiyama and the western gardens",
+      tip:"Bamboo grove before 8am or don't bother. Tenryu-ji is the reason to stay.",
+      stops:["Bamboo grove at first light","Tenryu-ji and its garden, unhurried","Walk north into the quieter temple lanes","Keep the afternoon loose and the light flexible"] },
+
+    { n:9, date:"Thu 1 Oct", city:"KYOTO", bed:"Kyoto · night 4",
+      title:"Ginkaku-ji and the Philosopher's Path",
+      tip:"Forward the big suitcase from here straight to the final Tokyo hotel. Take only an overnight bag to Fuji.",
+      stops:["Ginkaku-ji in the morning","Walk the canal south, one or two temples, not six","Nanzen-ji and the aqueduct","Long lunch, crafts shopping, slow afternoon"],
+      note:"Garden-heavy day by design. This is the one to protect if the trip starts running fast." },
+
+    { n:10, date:"Fri 2 Oct", city:"FUJI", bed:"Kawaguchiko · 1 night",
+      title:"West to the lake",
+      tip:"Shinkansen to Mishima then highway bus, or back through Shinjuku on the Fuji Excursion. Check the mountain forecast before you commit to a departure time.",
+      stops:["Travel with the small bag only","Arrive with daylight left for lakeside scouting","Sunset on the north shore if Fuji is out","Dinner at the lodging — keep the evening short"],
+      note:"Weather day. If the forecast collapses, the whole plan for tomorrow morning changes tonight." },
+
+    { n:11, date:"Sat 3 Oct", city:"TOKYO", bed:"Tokyo · final night",
+      title:"Fuji sunrise, then back to the city",
+      tip:"If Fuji is clear when you wake, go immediately — don't wait for the planned slot. Chureito needs 398 steps and about 40 minutes from the lodging.",
+      stops:["Sunrise: Chureito Pagoda, or the lake shore if the light is better there","Late morning back to Tokyo","Imperial Palace East Gardens — open Saturdays","Ginza in the afternoon, last shopping","A final dinner and a whisky stop"] },
+
+    { n:12, date:"Sun 4 Oct", city:"TOKYO", bed:"Fly home",
+      title:"Out",
+      tip:"Do the tax-free refund paperwork before you check any bags — you travel before the November change, so it's still the simple version.",
+      stops:["Breakfast, last walk","Airport train with three hours in hand"] }
+  ],
+
+  photo: [
+    { p:"Senso-ji", f:"Lanterns, temple architecture, street symmetry", w:"First light or after dark" },
+    { p:"Meiji Jingu", f:"Forest approach, torii, shrine detail", w:"Early morning" },
+    { p:"Yanaka", f:"Residential lanes, cats, low rooflines", w:"Late afternoon" },
+    { p:"Shibuya Sky", f:"City grid, crossing from above", w:"Sunset into blue hour" },
+    { p:"Nagamachi", f:"Earthen walls, canals, quiet lanes", w:"Morning or overcast" },
+    { p:"Kenroku-en", f:"Ponds, bridges, garden composition", w:"At opening" },
+    { p:"Kazuemachi", f:"Wooden facades, river, lantern light", w:"Dusk" },
+    { p:"Fushimi Inari", f:"Torii tunnels, forest depth", w:"Very early" },
+    { p:"Higashiyama", f:"Preserved streets, pagoda views", w:"Dawn" },
+    { p:"Gion", f:"Lanterns, wood facades, wet stone", w:"Blue hour" },
+    { p:"Arashiyama", f:"Bamboo, temple garden", w:"Very early" },
+    { p:"Lake Kawaguchi", f:"Fuji reflection, open landscape", w:"Sunrise" },
+    { p:"Chureito Pagoda", f:"Pagoda framed against Fuji", w:"Sunrise, clear sky only" }
+  ],
+  photoTips: [
+    "Clean the lens before every important shot — it matters more than any setting",
+    "1x for the cleanest image; 2x and 3x for compression and detail",
+    "Tap and hold to lock focus and exposure when composing carefully",
+    "Pull exposure down slightly for lanterns and night scenes to protect highlights",
+    "Shoot a few seconds of vertical video at every major location",
+    "Don't spend the whole sunrise looking at a screen — get the shot, then watch it"
+  ],
+  photoPeople: [
+    "Commuters, monks, worshippers and geiko are not props",
+    "Gion's private lanes ban photography outright, with a fine attached",
+    "Temple and shrine interiors are often no-photo — follow the signage",
+    "Don't block a narrow street to compose; step out of the flow first",
+    "Ask before photographing anyone working behind a counter",
+    "These are active religious spaces before they are locations"
+  ],
+
+  food: [
+    { h:"Tokyo", items:["Kagurazaka for small restaurants and izakaya","Yanaka and Nezu for neighbourhood cafes","One sushi or tempura counter as the planned splurge","Konbini breakfast is genuinely good, not a compromise"] },
+    { h:"Kanazawa", items:["Seafood and sushi are the priority here","Omicho Market for a daytime crab or shrimp stop","One small kappo or seasonal counter for dinner","Gold-leaf ice cream is a tourist thing and also fine"] },
+    { h:"Kyoto", items:["A kaiseki lunch costs a fraction of the same dinner","Obanzai, tofu, soba, yakitori, small counters","Don't make every Gion meal a famous name","Nishiki for grazing, standing at the stall"] },
+    { h:"Fuji", items:["If the lodging includes dinner and breakfast, take it","Hoto — thick noodles in miso, the local dish","Keep the evening simple, prioritise sunrise"] }
+  ],
+  phrases: [
+    ["Reservation", "Yoyaku"],
+    ["Two people", "Futari desu"],
+    ["Do you have a table?", "Aite imasu ka?"],
+    ["Thank you", "Arigatō gozaimasu"],
+    ["Check, please", "Okaikei onegaishimasu"]
+  ],
+  whisky: [
+    "Tokyo Whisky Library, Minami-Aoyama — a tasting stop, not a bottle hunt",
+    "Whisky Lab Kyoto Gion — put it on a Gion evening, in the walk",
+    "Ask for a comparative Japanese flight and let the bar adjust to what's open",
+    "Hibiki, Yamazaki and Hakushu availability moves constantly — take the substitution",
+    "Yamazaki distillery tours run by advance lottery if you decide to add one"
+  ],
+
+  packing: [
+    { h:"Clothes", items:["Breathable shirts and light trousers for city warmth","Light sweater or jacket for evenings and Fuji","Compact rain shell or small umbrella","Two pairs of comfortable walking shoes","Shoes that come off easily, and socks without holes"] },
+    { h:"Tech", items:["eSIM activated before the flight","Type A adapter — Japan runs 100V","Portable battery and a short cable","Camera and spare battery","Headphones"] },
+    { h:"Admin", items:["Passport, plus a digital copy stored separately","Medication in original packaging, full trip's worth","Some yen in cash to start","Small day bag for trains and the Fuji overnight","Suitcase space left for shopping"] }
+  ],
+
+  tracker: [
+    { t:"Tokyo hotel", s:"Booked" },
+    { t:"Kanazawa hotel", s:"Booked" },
+    { t:"Kyoto hotel", s:"Booked" },
+    { t:"Fuji lodging", s:"Confirm" },
+    { t:"Final Tokyo hotel", s:"Booked" },
+    { t:"Night count reconciled", s:"Blocks the trains" },
+    { t:"Tokyo → Kanazawa train", s:"After dates" },
+    { t:"Kanazawa → Kyoto train", s:"After dates" },
+    { t:"Kyoto → Fuji transport", s:"After dates" },
+    { t:"Fuji → Tokyo transport", s:"After dates" },
+    { t:"Airport transfer", s:"After dates" },
+    { t:"Whisky Lab Kyoto Gion", s:"Reserve" },
+    { t:"Shibuya Sky sunset slot", s:"Reserve" },
+    { t:"Special Kyoto meal", s:"2–4 weeks out" },
+    { t:"Luggage forwarding confirmed with each hotel", s:"Ask" }
+  ],
+
+  hotels: [
+    { city:"Tokyo · nights 1–3", nm:"— add hotel name —", jp:"ホテル名を入力", phone:"", station:"" },
+    { city:"Kanazawa · nights 4–5", nm:"— add hotel name —", jp:"ホテル名を入力", phone:"", station:"" },
+    { city:"Kyoto · nights 6–9", nm:"— add hotel name —", jp:"ホテル名を入力", phone:"", station:"" },
+    { city:"Fuji · night 10", nm:"— add lodging name —", jp:"宿名を入力", phone:"", station:"Kawaguchiko" },
+    { city:"Tokyo · final night", nm:"— add hotel name —", jp:"ホテル名を入力", phone:"", station:"" }
+  ],
+  emergency: {
+    calls: [
+      { big:"110", lbl:"Police", tel:"110" },
+      { big:"119", lbl:"Ambulance / Fire", tel:"119" }
+    ],
+    refs: [
+      { k:"Japan Visitor Hotline", v:"050-3816-2787", note:"24h · EN/JP/ZH/KO · JNTO" },
+      { k:"Tourist Police / lost items", v:"#9110", note:"Non-emergency police advice" },
+      { k:"Medical info (Tokyo)", v:"03-5285-8181", note:"Himawari · finds English-speaking clinics" },
+      { k:"Your embassy", v:"— add number —", note:"Save before you fly" },
+      { k:"Travel insurance", v:"— add number —", note:"Policy no. — add —" },
+      { k:"Card lost/stolen", v:"— add number —", note:"From the back of your card" }
+    ],
+    phrases: [
+      ["I need help", "Tasukete kudasai"],
+      ["Please call an ambulance", "Kyūkyūsha o yonde kudasai"],
+      ["Please call the police", "Keisatsu o yonde kudasai"],
+      ["I'm lost", "Michi ni mayoimashita"],
+      ["Where is the hospital?", "Byōin wa doko desu ka?"],
+      ["I have an allergy", "Arerugī ga arimasu"],
+      ["It hurts here", "Koko ga itai desu"]
+    ]
+  },
+
+  vocab: [
+    { h:"The essentials", items:[
+      ["Yes", "Hai"],
+      ["No", "Iie"],
+      ["Thank you", "Arigatō gozaimasu"],
+      ["You're welcome", "Dō itashimashite"],
+      ["Please (asking)", "Onegaishimasu"],
+      ["Excuse me / sorry", "Sumimasen"],
+      ["I'm sorry", "Gomen nasai"],
+      ["OK / understood", "Daijōbu"]
+    ]},
+    { h:"Greetings", items:[
+      ["Good morning", "Ohayō gozaimasu"],
+      ["Hello (daytime)", "Konnichiwa"],
+      ["Good evening", "Konbanwa"],
+      ["Goodbye", "Sayōnara"],
+      ["See you", "Ja mata"],
+      ["Nice to meet you", "Hajimemashite"]
+    ]},
+    { h:"Getting by", items:[
+      ["Do you speak English?", "Eigo o hanasemasu ka?"],
+      ["I don't understand", "Wakarimasen"],
+      ["How much is it?", "Ikura desu ka?"],
+      ["Where is...?", "...wa doko desu ka?"],
+      ["The toilet", "Toire"],
+      ["The station", "Eki"],
+      ["This one, please", "Kore o kudasai"],
+      ["Delicious", "Oishii"]
+    ]},
+    { h:"Numbers", items:[
+      ["One", "Ichi"],
+      ["Two", "Ni"],
+      ["Three", "San"],
+      ["Four", "Yon / Shi"],
+      ["Five", "Go"],
+      ["Six", "Roku"],
+      ["Seven", "Nana / Shichi"],
+      ["Eight", "Hachi"],
+      ["Nine", "Kyū"],
+      ["Ten", "Jū"],
+      ["Hundred", "Hyaku"],
+      ["Thousand", "Sen"]
+    ]}
+  ],
+
+  pins: [
+    { city:"Tokyo", kanji:"東京", places:[
+      { n:"Senso-ji", q:"Senso-ji Temple Asakusa", lat:35.7148, lng:139.7967, note:"Dawn, and again lit at night" },
+      { n:"Sumida Park", q:"Sumida Park Asakusa", lat:35.7130, lng:139.8000, note:"Open river views" },
+      { n:"Nezu Shrine", q:"Nezu Shrine Tokyo", lat:35.7203, lng:139.7607, note:"Small torii tunnel" },
+      { n:"Yanaka Ginza", q:"Yanaka Ginza Shopping Street", lat:35.7276, lng:139.7657, note:"Old Tokyo, best late afternoon" },
+      { n:"Kagurazaka", q:"Kagurazaka Tokyo", lat:35.7020, lng:139.7400, note:"Dinner without a reservation" },
+      { n:"Imperial Palace Gardens", q:"Imperial Palace East Gardens Tokyo", lat:35.6870, lng:139.7570, note:"Closed Mon and Fri" },
+      { n:"Tokyo Station Marunouchi", q:"Tokyo Station Marunouchi Building", lat:35.6812, lng:139.7671, note:"Brick facade, architectural contrast" },
+      { n:"Ginza", q:"Ginza 4-chome Crossing Tokyo", lat:35.6717, lng:139.7650, note:"Late afternoon, last shopping" },
+      { n:"Meiji Jingu", q:"Meiji Jingu Shrine Tokyo", lat:35.6764, lng:139.6993, note:"Opens with the sun" },
+      { n:"Takeshita Street", q:"Takeshita Street Harajuku", lat:35.6716, lng:139.7053, note:"As much as interests you" },
+      { n:"Omotesando", q:"Omotesando Avenue Tokyo", lat:35.6657, lng:139.7126, note:"Architecture walk" },
+      { n:"Tokyo Whisky Library", q:"Tokyo Whisky Library Minami-Aoyama", lat:35.6650, lng:139.7130, note:"Evening tasting stop" },
+      { n:"Shibuya Sky", q:"Shibuya Sky Observation Deck", lat:35.6580, lng:139.7016, note:"Sunset slot, book ahead" },
+      { n:"Daikanyama", q:"Daikanyama Tokyo", lat:35.6485, lng:139.6990, note:"Flex-day option" },
+      { n:"Nakameguro", q:"Nakameguro Tokyo", lat:35.6440, lng:139.6990, note:"Canal and coffee" }
+    ]},
+    { city:"Kanazawa", kanji:"金沢", places:[
+      { n:"Kanazawa Station", q:"Kanazawa Station", lat:36.5780, lng:136.6480, note:"Tsuzumi gate, arrival point" },
+      { n:"Omicho Market", q:"Omicho Market Kanazawa", lat:36.5720, lng:136.6560, note:"Seafood, late morning" },
+      { n:"Oyama Shrine", q:"Oyama Shrine Kanazawa", lat:36.5665, lng:136.6560, note:"Unusual stained-glass gate" },
+      { n:"Kanazawa Castle Park", q:"Kanazawa Castle Park", lat:36.5650, lng:136.6590, note:"Shares a gate with the garden" },
+      { n:"Kenroku-en", q:"Kenrokuen Garden Kanazawa", lat:36.5620, lng:136.6626, note:"At opening" },
+      { n:"21st Century Museum", q:"21st Century Museum of Contemporary Art Kanazawa", lat:36.5605, lng:136.6580, note:"Closed Mondays" },
+      { n:"Nagamachi", q:"Nagamachi Samurai District Kanazawa", lat:36.5650, lng:136.6510, note:"Earthen walls, morning light" },
+      { n:"Higashi Chaya", q:"Higashi Chaya District Kanazawa", lat:36.5720, lng:136.6680, note:"The big one. Don't stop here" },
+      { n:"Kazuemachi Chaya", q:"Kazuemachi Chaya District Kanazawa", lat:36.5705, lng:136.6640, note:"Quieter. Stay for dusk" },
+      { n:"Ume-no-Hashi", q:"Umenohashi Bridge Kanazawa", lat:36.5710, lng:136.6650, note:"Riverside at lantern hour" }
+    ]},
+    { city:"Kyoto", kanji:"京都", places:[
+      { n:"Kiyomizu-dera", q:"Kiyomizu-dera Kyoto", lat:34.9949, lng:135.7850, note:"Opens 6am" },
+      { n:"Sannenzaka", q:"Sannenzaka Kyoto", lat:34.9970, lng:135.7810, note:"Walk it downhill at dawn" },
+      { n:"Yasaka Shrine", q:"Yasaka Shrine Kyoto", lat:35.0036, lng:135.7785, note:"Lanterns after dark" },
+      { n:"Maruyama Park", q:"Maruyama Park Kyoto", lat:35.0033, lng:135.7815, note:"Break between temples" },
+      { n:"Gion / Hanamikoji", q:"Hanamikoji Street Gion Kyoto", lat:35.0036, lng:135.7752, note:"Main street only" },
+      { n:"Whisky Lab Kyoto Gion", q:"Whisky Lab Kyoto Gion", lat:35.0040, lng:135.7745, note:"On a Gion evening" },
+      { n:"Nishiki Market", q:"Nishiki Market Kyoto", lat:35.0050, lng:135.7649, note:"Eat where you buy" },
+      { n:"Fushimi Inari", q:"Fushimi Inari Taisha", lat:34.9671, lng:135.7727, note:"Before 7am. Open all night" },
+      { n:"Fushimi sake district", q:"Gekkeikan Okura Sake Museum Fushimi", lat:34.9310, lng:135.7620, note:"Canal, breweries, tastings" },
+      { n:"Arashiyama Bamboo", q:"Arashiyama Bamboo Grove", lat:35.0170, lng:135.6715, note:"Before 8am" },
+      { n:"Tenryu-ji", q:"Tenryu-ji Temple Arashiyama", lat:35.0160, lng:135.6738, note:"The real masterpiece" },
+      { n:"Ginkaku-ji", q:"Ginkaku-ji Kyoto", lat:35.0270, lng:135.7982, note:"¥1,000 as of 2026" },
+      { n:"Philosopher's Path", q:"Philosopher's Path Kyoto", lat:35.0230, lng:135.7950, note:"Free, walk it downhill" },
+      { n:"Nanzen-ji", q:"Nanzen-ji Kyoto", lat:35.0114, lng:135.7944, note:"Brick aqueduct" }
+    ]},
+    { city:"Fuji", kanji:"富士", places:[
+      { n:"Kawaguchiko Station", q:"Kawaguchiko Station", lat:35.4990, lng:138.7580, note:"Buses and the Fujikyu line" },
+      { n:"Kawaguchiko Ohashi", q:"Kawaguchiko Ohashi Bridge", lat:35.5140, lng:138.7590, note:"The reflection shot" },
+      { n:"North shore path", q:"Lake Kawaguchi north shore", lat:35.5220, lng:138.7500, note:"Sunset and 6am" },
+      { n:"Oishi Park", q:"Oishi Park Kawaguchiko", lat:35.5250, lng:138.7370, note:"Flowers in the foreground" },
+      { n:"Shimoyoshida Station", q:"Shimoyoshida Station Fujiyoshida", lat:35.4890, lng:138.8050, note:"Get off here for the pagoda" },
+      { n:"Chureito Pagoda", q:"Chureito Pagoda Arakurayama Sengen Park", lat:35.4990, lng:138.8020, note:"398 steps. Sunrise" }
+    ]},
+    { city:"Nara", kanji:"奈良", places:[
+      { n:"Kintetsu Nara Stn", q:"Kintetsu Nara Station", lat:34.6836, lng:135.8288, note:"Closer than JR Nara" },
+      { n:"Kofuku-ji", q:"Kofuku-ji Nara", lat:34.6830, lng:135.8320, note:"Five-storey pagoda" },
+      { n:"Todai-ji", q:"Todai-ji Nara", lat:34.6890, lng:135.8398, note:"Be there at opening" },
+      { n:"Nara Park", q:"Nara Park", lat:34.6851, lng:135.8430, note:"Deer. Hide the paper" },
+      { n:"Kasuga Taisha", q:"Kasuga Taisha Nara", lat:34.6815, lng:135.8484, note:"Lantern approach" },
+      { n:"Naramachi", q:"Naramachi Nara", lat:34.6780, lng:135.8290, note:"Merchant lanes, quieter" }
+    ]}
+  ]
+};
+
+/* =====================================================================
+   APP: hash router, five tabs, drill-down detail views, saved state.
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const screen = $("#screen");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---- persistence -------------------------------------------------
+   Uses the host's storage when available, otherwise keeps state in
+   memory for the session. Self-hosting this file? Swap the two calls
+   below for localStorage and ticks will persist in the browser.      */
+const KEY = "japan2026:checks";
+let checks = {};
+const store = {
+  async load(){
+    try{
+      if(window.storage){
+        const r = await window.storage.get(KEY);
+        if(r && r.value) checks = JSON.parse(r.value);
+      }
+    }catch(e){ /* first run, nothing saved yet */ }
+  },
+  async save(){
+    try{ if(window.storage) await window.storage.set(KEY, JSON.stringify(checks)); }
+    catch(e){ /* non-fatal: ticks still work for this session */ }
+  }
+};
+const isOn = id => !!checks[id];
+function toggle(id, on){ if(on) checks[id] = 1; else delete checks[id]; store.save(); }
+
+/* ---- trip clock --------------------------------------------------- */
+const START = new Date("2026-09-23T00:00:00");
+const END   = new Date("2026-10-04T23:59:59");
+function tripDay(){
+  const now = new Date();
+  const d = Math.floor((now - START) / 86400000) + 1;
+  if(now < START) return { phase:"before", until: Math.ceil((START - now) / 86400000) };
+  if(now > END)   return { phase:"after" };
+  return { phase:"during", n: Math.min(Math.max(d,1), TRIP.days.length) };
+}
+
+/* ---- router -------------------------------------------------------- */
+const TABS = ["today","days","places","map","prep"];
+let route = { tab:"today", detail:null };
+
+function parseHash(){
+  const h = location.hash.replace(/^#\/?/, "");
+  const [a,b] = h.split("/");
+  if(TABS.includes(a)) return { tab:a, detail: b ? decodeURIComponent(b) : null };
+  return { tab:"today", detail:null };
+}
+function go(tab, detail){
+  location.hash = "/" + tab + (detail ? "/" + encodeURIComponent(detail) : "");
+}
+window.addEventListener("hashchange", render);
+
+const chev = `<span class="chev"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>`;
+
+/* ---- views --------------------------------------------------------- */
+function viewToday(){
+  const t = tripDay();
+  let count, head, sub;
+  if(t.phase === "before"){
+    count = t.until; head = t.until === 1 ? "day to go" : "days to go";
+    sub = "Trains still can't be booked until the night count is settled — that's the one blocking task.";
+  } else if(t.phase === "during"){
+    const d = TRIP.days.find(x => x.n === t.n);
+    count = "Day " + t.n; head = d.title; sub = d.tip || "";
+  } else {
+    count = "終"; head = "Trip complete"; sub = "The days are all still here to look back through.";
+  }
+
+  const packDone = TRIP.packing.flatMap((g,gi) => g.items.map((_,ii) => `p${gi}-${ii}`)).filter(isOn).length;
+  const packAll  = TRIP.packing.reduce((a,g) => a + g.items.length, 0);
+  const trkDone  = TRIP.tracker.map((_,i) => `t${i}`).filter(isOn).length;
+  const trkAll   = TRIP.tracker.length;
+
+  const next = t.phase === "during"
+    ? TRIP.days.find(x => x.n === t.n)
+    : TRIP.days[0];
+
+  return `
+  <div class="hero-today">
+    <div class="count">${typeof count === "number" ? count : esc(count)}</div>
+    <h1>${esc(head)}</h1>
+    ${sub ? `<p>${esc(sub)}</p>` : ""}
+    <div class="route">
+      ${TRIP.route.map(r => `<div><b>${esc(r.city)}</b>${esc(r.nights)}</div>`).join("")}
+    </div>
+  </div>
+  <div class="pad">
+    <div class="prog">
+      <button data-goto="prep/booking">
+        <div class="pn">${trkDone}<span class="muted" style="font-size:15px">/${trkAll}</span></div>
+        <div class="pl">Booking settled</div>
+        <div class="bar"><i style="width:${Math.round(trkDone/trkAll*100)}%"></i></div>
+      </button>
+      <button data-goto="prep/packing">
+        <div class="pn">${packDone}<span class="muted" style="font-size:15px">/${packAll}</span></div>
+        <div class="pl">Packed</div>
+        <div class="bar"><i style="width:${Math.round(packDone/packAll*100)}%"></i></div>
+      </button>
+    </div>
+
+    <div class="card" style="background:var(--indigo);border-color:var(--indigo);color:var(--paper)">
+      <span class="kicker">Unresolved</span>
+      <h3 style="color:var(--paper)">11 nights available, 13 planned</h3>
+      <p style="color:rgba(236,237,233,.78)">The plan in this app uses Tokyo 3, Kanazawa 2, Kyoto 4, Fuji 1, Tokyo 1 — every stop kept, Nara dropped. Change it or confirm it, then book the four train legs.</p>
+    </div>
+
+    <h2 class="sec" style="margin-top:26px">${t.phase === "during" ? "Today" : "First day"}</h2>
+    <p class="sub">${esc(next.date)} · ${esc(next.bed)}</p>
+    <button class="rowlink" data-goto="days/${next.n}">
+      <div><span class="kicker">${esc(next.city)}</span><b style="font-family:var(--serif);font-weight:500;font-size:17px">${esc(next.title)}</b></div>
+      ${chev}
+    </button>
+  </div>`;
+}
+
+function viewDays(){
+  return `<div class="pad">
+    <h2 class="sec">Day by day</h2>
+    <p class="sub">Eleven nights, five stops. Tap any day for the full plan.</p>
+    ${TRIP.days.map(d => `
+      <button class="rowlink" data-goto="days/${d.n}">
+        <div style="flex:0 0 62px;font-family:var(--serif);font-size:13px;color:var(--stone)">${esc(d.date)}</div>
+        <div style="flex:1;min-width:0">
+          <span class="kicker" style="margin-bottom:2px">${esc(d.city)}</span>
+          <span style="font-family:var(--serif);font-size:16.5px;display:block;line-height:1.3">${esc(d.title)}</span>
+        </div>
+        ${chev}
+      </button>`).join("")}
+  </div>`;
+}
+
+function viewDay(n){
+  const i = TRIP.days.findIndex(d => d.n === +n);
+  if(i < 0) return viewDays();
+  const d = TRIP.days[i];
+  const prev = TRIP.days[i-1], next = TRIP.days[i+1];
+  return `<div class="pad">
+    <span class="kicker">${esc(d.city)} · Day ${d.n}</span>
+    <h2 class="sec" style="font-size:26px">${esc(d.title)}</h2>
+    <div class="daymeta">
+      <span class="chip hot">${esc(d.date)}</span>
+      <span class="chip">${esc(d.bed)}</span>
+    </div>
+    <ul class="stops">${d.stops.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+    ${d.note ? `<p class="note">${esc(d.note)}</p>` : ""}
+    ${d.tip ? `<p class="tip">${esc(d.tip)}</p>` : ""}
+    <button class="rowlink" data-goto="map/${encodeURIComponent(cityToPinSet(d.city))}">
+      <div><span style="font-size:15.5px">Open ${esc(cityToPinSet(d.city))} on the map</span></div>${chev}
+    </button>
+    <div class="daynav">
+      <button data-goto="${prev ? "days/"+prev.n : ""}" ${prev ? "" : "disabled"}>← ${prev ? esc(prev.date) : ""}</button>
+      <button data-goto="${next ? "days/"+next.n : ""}" ${next ? "" : "disabled"}>${next ? esc(next.date) : ""} →</button>
+    </div>
+  </div>`;
+}
+function cityToPinSet(city){
+  const c = city.charAt(0) + city.slice(1).toLowerCase();
+  return TRIP.pins.some(p => p.city === c) ? c : TRIP.pins[0].city;
+}
+
+function viewPlaces(){
+  return `<div class="pad">
+    <h2 class="sec">Places</h2>
+    <p class="sub">What each stop is like, and which sights repay an early alarm.</p>
+    ${TRIP.destinations.map(d => `
+      <button class="rowlink" data-goto="places/${encodeURIComponent(d.city)}">
+        <div style="flex:0 0 40px;font-family:var(--serif);font-size:25px;color:var(--persimmon);line-height:1">${esc(d.kanji)}</div>
+        <div style="flex:1;min-width:0">
+          <span style="font-family:var(--serif);font-size:18px;display:block">${esc(d.city)}</span>
+          <span class="muted" style="font-size:13px">${esc(d.meta)}</span>
+        </div>
+        ${chev}
+      </button>`).join("")}
+  </div>`;
+}
+
+function viewPlace(city){
+  const d = TRIP.destinations.find(x => x.city === city);
+  if(!d) return viewPlaces();
+  return `<div class="pad">
+    <span class="kicker">${esc(d.meta)}</span>
+    <h2 class="sec" style="font-size:27px">${esc(d.kanji)} ${esc(d.city)}</h2>
+    <p class="sub">${esc(d.lede)}</p>
+    ${d.spots.map(s => `
+      <div class="spot">
+        <h4>${esc(s.h)}</h4>
+        <span class="when">${esc(s.when)}</span>
+        <p>${esc(s.p)}</p>
+      </div>`).join("")}
+    ${d.watch ? `<div class="watch"><b>${esc(d.watch.h)}</b><p>${esc(d.watch.p)}</p></div>` : ""}
+    ${TRIP.pins.some(p => p.city === d.city) ? `
+      <button class="rowlink" data-goto="map/${encodeURIComponent(d.city)}" style="margin-top:18px">
+        <div><span style="font-size:15.5px">See ${esc(d.city)} pins on the map</span></div>${chev}
+      </button>` : ""}
+  </div>`;
+}
+
+/* ---- map ---- */
+const gmaps = p => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.q);
+function routeUrl(places){
+  const pts = places.slice(0,10);
+  const mid = pts.slice(1,-1).map(p => encodeURIComponent(p.q)).join("%7C");
+  return "https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=" +
+    encodeURIComponent(pts[0].q) + "&destination=" + encodeURIComponent(pts[pts.length-1].q) +
+    (mid ? "&waypoints=" + mid : "");
+}
+function viewMap(city){
+  const set = TRIP.pins.find(c => c.city === city) || TRIP.pins[0];
+  const W = 700, H = 500, pad = 54;
+  const midLat = set.places.reduce((a,p) => a+p.lat, 0) / set.places.length;
+  const k = Math.cos(midLat * Math.PI/180);
+  const xs = set.places.map(p => p.lng*k), ys = set.places.map(p => p.lat);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const spanX = Math.max(maxX-minX,1e-6), spanY = Math.max(maxY-minY,1e-6);
+  const scale = Math.min((W-pad*2)/spanX, (H-pad*2)/spanY);
+  const offX = (W-spanX*scale)/2, offY = (H-spanY*scale)/2;
+  const px = p => offX + (p.lng*k - minX)*scale;
+  const py = p => H - (offY + (p.lat - minY)*scale);
+  const pxPerKm = scale/111.32;
+  let km = 0.5; [0.5,1,2,5,10].forEach(v => { if(v*pxPerKm < W*0.3) km = v; });
+
+  return `<div class="pad">
+    <h2 class="sec">Pin map</h2>
+    <p class="sub">Tap a pin or a name to open it in Google Maps.</p>
+    <div class="segs" id="mapsegs">
+      ${TRIP.pins.map(c => `<button data-goto="map/${encodeURIComponent(c.city)}" aria-pressed="${c.city===set.city}">${esc(c.city)}</button>`).join("")}
+    </div>
+    <div class="mapframe">
+      <div id="leaflet-map" role="img" aria-label="Map of ${esc(set.city)}"></div>
+    </div>
+    <ul class="pinlist" id="pinlist">
+      ${set.places.map((p,i) => `
+        <li data-i="${i}"><a href="${gmaps(p)}" target="_blank" rel="noopener">
+          <b>${i+1}</b><span><span class="nm">${esc(p.n)}</span><span class="nt">${esc(p.note)}</span></span>
+          <span class="go">Maps</span></a></li>`).join("")}
+    </ul>
+    <a class="btn-wide" href="${routeUrl(set.places)}" target="_blank" rel="noopener">
+      Open the first ${Math.min(set.places.length,10)} as a walking route
+    </a>
+  </div>`;
+}
+let _map = null;
+function wireMap(city){
+  const set = TRIP.pins.find(c => c.city === city) || TRIP.pins[0];
+  const el = document.getElementById("leaflet-map");
+  if(!el || typeof L === "undefined") return;
+
+  if(_map){ _map.remove(); _map = null; }
+  _map = L.map(el, { scrollWheelZoom:false, attributionControl:true });
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap &copy; CARTO'
+  }).addTo(_map);
+
+  const rows = [...document.querySelectorAll("#pinlist li")];
+  const open = i => window.open(gmaps(set.places[i]), "_blank", "noopener");
+  const markers = set.places.map((p,i) => {
+    const icon = L.divIcon({
+      className:"",
+      html:`<div class="pinmark" data-i="${i}">${i+1}</div>`,
+      iconSize:[26,26], iconAnchor:[13,13]
+    });
+    const m = L.marker([p.lat, p.lng], { icon, title:p.n }).addTo(_map);
+    m.bindPopup(`<b>${esc(p.n)}</b><br>${esc(p.note)}<br><a href="${gmaps(p)}" target="_blank" rel="noopener">Open in Google Maps</a>`);
+    m.on("click", () => rows[i] && rows[i].classList.add("on"));
+    m.on("mouseover", () => rows[i] && rows[i].classList.add("on"));
+    m.on("mouseout", () => rows[i] && rows[i].classList.remove("on"));
+    return m;
+  });
+
+  const group = L.featureGroup(markers);
+  _map.fitBounds(group.getBounds().pad(0.15));
+  setTimeout(() => _map && _map.invalidateSize(), 60);
+
+  rows.forEach((li,i) => {
+    li.addEventListener("click", e => {
+      if(e.target.closest("a")) return;
+      e.preventDefault();
+      markers[i].openPopup();
+      _map.panTo(markers[i].getLatLng());
+    });
+    li.addEventListener("mouseenter", () => { const d=markers[i].getElement()?.querySelector(".pinmark"); d&&d.classList.add("on"); });
+    li.addEventListener("mouseleave", () => { const d=markers[i].getElement()?.querySelector(".pinmark"); d&&d.classList.remove("on"); });
+  });
+}
+
+/* ---- prep ---- */
+const PREP = [
+  { id:"booking",  label:"Booking" },
+  { id:"packing",  label:"Packing" },
+  { id:"before",   label:"Before you go" },
+  { id:"essentials", label:"Essentials" },
+  { id:"photo",    label:"Photography" },
+  { id:"food",     label:"Eating" },
+  { id:"words",    label:"Words" },
+  { id:"emergency", label:"Emergency" }
+];
+function viewPrep(sub){
+  const cur = PREP.some(p => p.id === sub) ? sub : "booking";
+  const segs = `<div class="segs">${PREP.map(p =>
+    `<button data-goto="prep/${p.id}" aria-pressed="${p.id===cur}">${p.label}</button>`).join("")}</div>`;
+  let body = "";
+
+  if(cur === "booking"){
+    const done = TRIP.tracker.map((_,i)=>`t${i}`).filter(isOn).length;
+    body = `<h2 class="sec">Booking tracker</h2>
+      <p class="sub">${done} of ${TRIP.tracker.length} settled. Train legs stay blocked until the night count is fixed.</p>
+      ${TRIP.tracker.map((t,i) => `
+        <label class="chk"><input type="checkbox" data-ck="t${i}" ${isOn("t"+i)?"checked":""}>
+        <span class="lbl">${esc(t.t)}</span><span class="st ${isOn("t"+i)?"done":""}">${isOn("t"+i)?"Done":esc(t.s)}</span></label>`).join("")}`;
+  }
+  else if(cur === "packing"){
+    const all = TRIP.packing.reduce((a,g)=>a+g.items.length,0);
+    const done = TRIP.packing.flatMap((g,gi)=>g.items.map((_,ii)=>`p${gi}-${ii}`)).filter(isOn).length;
+    body = `<h2 class="sec">Packing</h2>
+      <p class="sub">${done} of ${all} packed. Cities are warm in late September; the Fuji morning is not.</p>
+      ${TRIP.packing.map((g,gi) => `<div class="grp-h">${esc(g.h)}</div>
+        ${g.items.map((it,ii) => `
+          <label class="chk"><input type="checkbox" data-ck="p${gi}-${ii}" ${isOn(`p${gi}-${ii}`)?"checked":""}>
+          <span class="lbl">${esc(it)}</span></label>`).join("")}`).join("")}`;
+  }
+  else if(cur === "before"){
+    body = `<h2 class="sec">Before you leave</h2>
+      <p class="sub">Everything here is easier from home than from a hotel lobby in Shinjuku.</p>
+      ${TRIP.before.map(n => `<div class="card"><h3>${esc(n.h)}</h3><p>${esc(n.p)}</p></div>`).join("")}
+      <div class="grp-h">Worth booking ahead</div>
+      <ul class="plain">${TRIP.bookAhead.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>
+      <div class="grp-h">Not worth booking</div>
+      <ul class="plain">${TRIP.bookNot.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`;
+  }
+  else if(cur === "essentials"){
+    body = `<h2 class="sec">Essentials</h2>
+      <p class="sub">Trains, money, luggage, apps, and what changed this year.</p>
+      ${TRIP.essentials.map(e => `<div class="card">
+        <span class="kicker">${esc(e.n)}</span><h3>${esc(e.h)}</h3><p>${esc(e.p)}</p>
+        <ul class="plain" style="margin-top:9px">${e.list.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
+      </div>`).join("")}`;
+  }
+  else if(cur === "photo"){
+    body = `<h2 class="sec">Photography</h2>
+      <p class="sub">The timing column is the part that matters.</p>
+      <table class="ptable"><tbody>
+        ${TRIP.photo.map(r=>`<tr><td>${esc(r.p)}</td><td>${esc(r.f)}</td><td>${esc(r.w)}</td></tr>`).join("")}
+      </tbody></table>
+      <div class="grp-h">iPhone setup</div>
+      <ul class="plain">${TRIP.photoTips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+      <div class="grp-h">Photographing people</div>
+      <ul class="plain">${TRIP.photoPeople.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`;
+  }
+  else if(cur === "food"){
+    body = `<h2 class="sec">Eating</h2>
+      <p class="sub">One intentional meal a day, everything else left open.</p>
+      ${TRIP.food.map(f => `<div class="grp-h">${esc(f.h)}</div>
+        <ul class="plain">${f.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`).join("")}
+      <div class="grp-h">Whisky</div>
+      <ul class="plain">${TRIP.whisky.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>
+      <div class="grp-h">Useful at the door</div>
+      ${TRIP.phrases.map(p=>`<div class="phr"><span>${esc(p[0])}</span><span>${esc(p[1])}</span></div>`).join("")}`;
+  }
+  else if(cur === "words"){
+    body = `<h2 class="sec">A few words</h2>
+      <p class="sub">Enough to be polite and get by. A little effort goes a long way.</p>
+      ${TRIP.vocab.map(g => `<div class="grp-h">${esc(g.h)}</div>
+        ${g.items.map(p=>`<div class="phr"><span>${esc(p[0])}</span><span>${esc(p[1])}</span></div>`).join("")}`).join("")}`;
+  }
+  else if(cur === "emergency"){
+    const E = TRIP.emergency;
+    body = `<h2 class="sec">Emergency</h2>
+      <p class="sub">Works offline once the app has loaded. Fill in the blanks before you fly.</p>
+      <div class="sos">
+        ${E.calls.map(c=>`<a href="tel:${esc(c.tel)}"><span class="big">${esc(c.big)}</span><span class="lbl">${esc(c.lbl)}</span></a>`).join("")}
+      </div>
+      <div class="grp-h">Numbers to keep</div>
+      ${E.refs.map(r=>`<div class="refrow"><span class="k">${esc(r.k)}</span><span class="v">${/[0-9#]/.test(r.v)&&!r.v.includes("add")?`<a href="tel:${esc(r.v.replace(/[^0-9#+]/g,""))}" style="color:var(--indigo);text-decoration:none">${esc(r.v)}</a>`:esc(r.v)}<small>${esc(r.note)}</small></span></div>`).join("")}
+      <div class="grp-h">Where I'm staying</div>
+      ${TRIP.hotels.map(h=>`<div class="hotelcard">
+        <span class="city">${esc(h.city)}</span>
+        <div class="nm">${esc(h.nm)}</div>
+        <div class="jp">${esc(h.jp)}</div>
+        <div class="meta">
+          ${h.phone?`<span>Tel <a href="tel:${esc(h.phone.replace(/[^0-9+]/g,""))}">${esc(h.phone)}</a></span>`:`<span>Tel — add —</span>`}
+          ${h.station?`<span>Nearest station · ${esc(h.station)}</span>`:`<span>Nearest station — add —</span>`}
+        </div>
+      </div>`).join("")}
+      <div class="grp-h">If something goes wrong</div>
+      ${E.phrases.map(p=>`<div class="phr"><span>${esc(p[0])}</span><span>${esc(p[1])}</span></div>`).join("")}`;
+  }
+  return `<div class="pad">${segs}${body}</div>`;
+}
+
+/* ---- render -------------------------------------------------------- */
+const TITLES = { today:"Japan", days:"Day by day", places:"Places", map:"Pin map", prep:"Prep" };
+function render(){
+  route = parseHash();
+  const { tab, detail } = route;
+  let html;
+  if(tab === "days")        html = detail ? viewDay(detail) : viewDays();
+  else if(tab === "places") html = detail ? viewPlace(detail) : viewPlaces();
+  else if(tab === "map")    html = viewMap(detail || TRIP.pins[0].city);
+  else if(tab === "prep")   html = viewPrep(detail);
+  else                      html = viewToday();
+
+  screen.innerHTML = html;
+  window.scrollTo(0,0);
+
+  const isDetail = (tab === "days" || tab === "places") && detail;
+  $("#back").hidden = !isDetail;
+  $("#bartitle").innerHTML = tab === "today"
+    ? `Japan<small>23 SEP – 4 OCT 2026</small>`
+    : esc(TITLES[tab]);
+
+  [...$("#tabs").children].forEach(b =>
+    b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false"));
+
+  if(tab === "map") wireMap(detail || TRIP.pins[0].city);
+}
+
+/* ---- global handlers ------------------------------------------------ */
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-goto]");
+  if(g && g.dataset.goto){
+    e.preventDefault();
+    location.hash = "/" + g.dataset.goto;
+    return;
+  }
+  const tab = e.target.closest("#tabs button");
+  if(tab){ go(tab.dataset.tab); }
+});
+document.addEventListener("change", e => {
+  const cb = e.target.closest("[data-ck]");
+  if(!cb) return;
+  toggle(cb.dataset.ck, cb.checked);
+  const st = cb.parentElement.querySelector(".st");
+  if(st){
+    const i = +cb.dataset.ck.slice(1);
+    st.textContent = cb.checked ? "Done" : TRIP.tracker[i].s;
+    st.classList.toggle("done", cb.checked);
+  }
+  const sub = $(".sub");
+  if(sub && /packed|settled/.test(sub.textContent)){
+    const pd = TRIP.packing.flatMap((g,gi)=>g.items.map((_,ii)=>`p${gi}-${ii}`)).filter(isOn).length;
+    const pa = TRIP.packing.reduce((a,g)=>a+g.items.length,0);
+    const td = TRIP.tracker.map((_,i)=>`t${i}`).filter(isOn).length;
+    sub.textContent = /packed/.test(sub.textContent)
+      ? `${pd} of ${pa} packed. Cities are warm in late September; the Fuji morning is not.`
+      : `${td} of ${TRIP.tracker.length} settled. Train legs stay blocked until the night count is fixed.`;
+  }
+});
+$("#back").addEventListener("click", () => go(route.tab));
+
+/* ---- search --------------------------------------------------------- */
+const INDEX = [];
+TRIP.days.forEach(d => INDEX.push({
+  k:"Day " + d.n + " · " + d.date, t:d.title,
+  b:[d.city, ...d.stops, d.note||"", d.tip||""].join(" "), go:"days/"+d.n }));
+TRIP.destinations.forEach(d => {
+  INDEX.push({ k:"Place", t:d.city, b:d.lede, go:"places/"+encodeURIComponent(d.city) });
+  d.spots.forEach(s => INDEX.push({
+    k:d.city, t:s.h, b:s.when + " " + s.p, go:"places/"+encodeURIComponent(d.city) }));
+});
+TRIP.pins.forEach(c => c.places.forEach(p => INDEX.push({
+  k:c.city + " · pin", t:p.n, b:p.note, go:"map/"+encodeURIComponent(c.city) })));
+TRIP.essentials.forEach(e => INDEX.push({
+  k:"Essentials", t:e.h, b:e.p + " " + e.list.join(" "), go:"prep/essentials" }));
+
+function runSearch(q){
+  const res = $("#searchres");
+  const s = q.trim().toLowerCase();
+  if(s.length < 2){ res.innerHTML = `<p class="muted" style="padding:14px 0">Type at least two letters.</p>`; return; }
+  const hits = INDEX.filter(r => (r.t + " " + r.b + " " + r.k).toLowerCase().includes(s)).slice(0,30);
+  res.innerHTML = hits.length
+    ? hits.map(r => `<button class="rowlink" data-goto="${r.go}" data-close>
+        <div style="flex:1;min-width:0">
+          <span class="res-k">${esc(r.k)}</span>
+          <span style="font-family:var(--serif);font-size:16.5px;display:block;line-height:1.3">${esc(r.t)}</span>
+          <span class="muted" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.b)}</span>
+        </div>${chev}</button>`).join("")
+    : `<p class="muted" style="padding:14px 0">Nothing matches “${esc(q)}”.</p>`;
+}
+function openSearch(on){
+  $("#searchwrap").classList.toggle("open", on);
+  if(on){ $("#searchinput").value = ""; runSearch(""); setTimeout(() => $("#searchinput").focus(), 40); }
+}
+$("#searchbtn").addEventListener("click", () => openSearch(true));
+$("#searchclose").addEventListener("click", () => openSearch(false));
+$("#searchinput").addEventListener("input", e => runSearch(e.target.value));
+$("#searchres").addEventListener("click", e => { if(e.target.closest("[data-close]")) openSearch(false); });
+document.addEventListener("keydown", e => { if(e.key === "Escape") openSearch(false); });
+
+/* ---- boot ----------------------------------------------------------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {/* offline features simply unavailable */});
+  });
+}
+store.load().then(() => {
+  if(!location.hash) location.hash = "/today";
+  render();
+});
+</script>
+</body>
+</html>
